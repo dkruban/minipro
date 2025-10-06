@@ -5,7 +5,9 @@ const fs = require('fs');
 const archiver = require('archiver');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
-const port = 3000;
+
+// Use the port provided by Render, or default to 3000 for local development
+const port = process.env.PORT || 3000;
 
 const app = express();
 app.use(express.json());
@@ -19,15 +21,29 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(__dirname));
+// --- FIX 1: REMOVED STATIC FILE SERVING ---
+// This line was causing the "ENOENT: no such file or directory, stat 'index.html'" error.
+// Your backend is an API, so it doesn't need to serve frontend files.
+// app.use(express.static(__dirname));
 
-mongoose.connect('mongodb://127.0.0.1:27017/mepco_erp');
+// --- FIX 2: USING ENVIRONMENT VARIABLE FOR DATABASE ---
+// Use the MONGODB_URI from Render environment variables, or fall back to local for development.
+const dbUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mepco_erp';
+mongoose.connect(dbUri);
 
 const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
-    console.log("mongodb connect successfully.");
-    console.log("http://localhost:3000/");
+    console.log("Connected to MongoDB successfully.");
 });
+
+// --- FIX 3: REMOVED THE FRONTEND ROOT ROUTE ---
+// This route was also trying to serve 'index.html'. It's not needed for an API.
+/*
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+*/
 
 const userSchema = new mongoose.Schema({
     username: String,
@@ -61,10 +77,6 @@ const settingsSchema = new mongoose.Schema({
 });
 
 const Settings = mongoose.model("Settings", settingsSchema);
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
 
 app.post('/post', async (req, res) => {
     const { username, password } = req.body;
