@@ -38,37 +38,25 @@ app.get('/', (req, res) => {
   });
 });
 
-// --- FIX 2: USING MONGODB ATLAS CONNECTION WITH SSL/TLS OPTIONS ---
+// --- CORRECTED: SIMPLIFIED MONGODB CONNECTION ---
 // Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
 const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:UecigyVjlDxBVnUx@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-// Configure mongoose connection with SSL/TLS options
-mongoose.connect(dbUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  // Add these options to fix SSL/TLS issues
-  ssl: true,
-  sslValidate: true,
-  tls: true,
-  tlsAllowInvalidCertificates: false,
-  tlsAllowInvalidHostnames: false,
-  // Connection timeout
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-});
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once('open', () => {
-    console.log("Connected to MongoDB successfully.");
-});
+// Simplified and more robust connection
+mongoose.connect(dbUri)
+  .then(() => console.log("Connected to MongoDB successfully."))
+  .catch(err => {
+    console.error("MongoDB connection error:", err);
+    // Exit process with failure if DB connection fails
+    process.exit(1);
+  });
 
 // Add connection error handling
-db.on('disconnected', () => {
+mongoose.connection.on('disconnected', () => {
     console.log('MongoDB disconnected');
 });
 
-db.on('reconnected', () => {
+mongoose.connection.on('reconnected', () => {
     console.log('MongoDB reconnected');
 });
 
