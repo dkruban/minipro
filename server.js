@@ -21,15 +21,41 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- FIX 1: REMOVED STATIC FILE SERVING ---
-// This line was causing the "ENOENT: no such file or directory, stat 'index.html'" error.
-// Your backend is an API, so it doesn't need to serve frontend files.
-// app.use(express.static(__dirname));
+// Add a simple root route to prevent "Cannot GET /" error
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'MEPCO ERP API Server',
+    status: 'running',
+    endpoints: [
+      '/api/settings',
+      '/students',
+      '/faculty',
+      '/courses',
+      '/fees',
+      '/exams',
+      '/api/reports'
+    ]
+  });
+});
 
-// --- FIX 2: USING MONGODB ATLAS CONNECTION ---
+// --- FIX 2: USING MONGODB ATLAS CONNECTION WITH SSL/TLS OPTIONS ---
 // Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
 const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:UecigyVjlDxBVnUx@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-mongoose.connect(dbUri);
+
+// Configure mongoose connection with SSL/TLS options
+mongoose.connect(dbUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  // Add these options to fix SSL/TLS issues
+  ssl: true,
+  sslValidate: true,
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  tlsAllowInvalidHostnames: false,
+  // Connection timeout
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+});
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
@@ -37,13 +63,14 @@ db.once('open', () => {
     console.log("Connected to MongoDB successfully.");
 });
 
-// --- FIX 3: REMOVED THE FRONTEND ROOT ROUTE ---
-// This route was also trying to serve 'index.html'. It's not needed for an API.
-/*
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// Add connection error handling
+db.on('disconnected', () => {
+    console.log('MongoDB disconnected');
 });
-*/
+
+db.on('reconnected', () => {
+    console.log('MongoDB reconnected');
+});
 
 const userSchema = new mongoose.Schema({
     username: String,
