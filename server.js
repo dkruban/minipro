@@ -38,25 +38,22 @@ app.get('/', (req, res) => {
   });
 });
 
-// --- CORRECTED: SIMPLIFIED MONGODB CONNECTION ---
+// --- CORRECTED: RESILIENT MONGODB CONNECTION ---
 // Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
 const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:UecigyVjlDxBVnUx@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-// Simplified and more robust connection
+// Configure mongoose connection with retry logic
 mongoose.connect(dbUri)
   .then(() => console.log("Connected to MongoDB successfully."))
-  .catch(err => {
-    console.error("MongoDB connection error:", err);
-    // Exit process with failure if DB connection fails
-    process.exit(1);
-  });
+  .catch(err => console.error("Initial MongoDB connection failed:", err));
 
 // Add connection error handling
-mongoose.connection.on('disconnected', () => {
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.on('disconnected', () => {
     console.log('MongoDB disconnected');
 });
-
-mongoose.connection.on('reconnected', () => {
+db.on('reconnected', () => {
     console.log('MongoDB reconnected');
 });
 
