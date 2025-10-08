@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 
 // --- FIX 2: USING MONGODB ATLAS CONNECTION ---
 // Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
-const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:<db_password>@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:UecigyVjlDxBVnUx@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 mongoose.connect(dbUri);
 
 const db = mongoose.connection;
