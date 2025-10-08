@@ -26,9 +26,9 @@ app.use((req, res, next) => {
 // Your backend is an API, so it doesn't need to serve frontend files.
 // app.use(express.static(__dirname));
 
-// --- FIX 2: USING ENVIRONMENT VARIABLE FOR DATABASE ---
-// Use the MONGODB_URI from Render environment variables, or fall back to local for development.
-const dbUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mepco_erp';
+// --- FIX 2: USING MONGODB ATLAS CONNECTION ---
+// Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
+const dbUri = process.env.MONGODB_URI || 'mongodb+srv://dkrkumar8585:<db_password>@cluster0.gpzanep.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 mongoose.connect(dbUri);
 
 const db = mongoose.connection;
