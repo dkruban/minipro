@@ -1,0 +1,12 @@
+{
+  "name": "mepco-erp-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for MEPCO ERP System",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p dist && cp -r * dist/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
