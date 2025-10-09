@@ -4,7 +4,7 @@
   "description": "Frontend for MEPCO ERP System",
   "main": "index.html",
   "scripts": {
-    "build": "mkdir -p dist && rsync -av --progress . dist/ --exclude dist"
+    "build": "mkdir -p build && rsync -av --progress . build/ --exclude build"
   },
   "keywords": [],
   "author": "",
