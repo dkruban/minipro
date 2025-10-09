@@ -21,22 +21,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add a simple root route to prevent "Cannot GET /" error
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'MEPCO ERP API Server',
-    status: 'running',
-    endpoints: [
-      '/api/settings',
-      '/students',
-      '/faculty',
-      '/courses',
-      '/fees',
-      '/exams',
-      '/api/reports'
-    ]
-  });
-});
+// --- THE OLD ROOT ROUTE HAS BEEN REMOVED ---
+// The previous `app.get('/', ...)` that returned JSON was here.
+// It is now replaced by the static file serving logic at the bottom of the file.
 
 // --- CORRECTED: RESILIENT MONGODB CONNECTION ---
 // Use the MONGODB_URI from Render environment variables, or fall back to MongoDB Atlas for development.
@@ -1178,6 +1165,19 @@ async function generateFacultyReport(format, dateRange, filepath) {
         throw err;
     }
 }
+
+
+// --- ADDED: SERVE FRONTEND STATIC FILES ---
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, 'frontend/build')));
+
+// For any request that doesn't match an API route, send back index.html
+// This handles client-side routing (e.g., React Router)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
+});
+// --- END OF ADDED CODE ---
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
