@@ -1,495 +1,347 @@
-// Initialize particles
-function createParticles() {
-    const particlesContainer = document.getElementById('particlesContainer');
-    const particleCount = 50;
-    
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.animationDelay = `${Math.random() * 20}s`;
-        particle.style.animationDuration = `${20 + Math.random() * 10}s`;
-        particlesContainer.appendChild(particle);
-    }
-}
-
-// Global variables
-let isListening = false;
-let isSpeaking = false;
-let recognition = null;
-let apiKey = '';
-let wakeWord = 'Hey Demon';
-let voiceType = 'default';
-let apiWorking = false; // Track if API is working
-let modelInUse = ''; // Track which model is being used
-let speechTimeout = null; // Track speech timeout
-let speechRetryCount = 0; // Track speech retry attempts
-let maxSpeechRetries = 3; // Maximum speech retry attempts
-
-// Initialize speech recognition
-function initSpeechRecognition() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('statusText').textContent = `You said: "${transcript}"`;
-            
-            // Check for wake word
-            if (transcript.toLowerCase().includes(wakeWord.toLowerCase())) {
-                activateDemon();
-            } else if (isListening) {
-                // Process command if already listening
-                processCommand(transcript);
-            }
-        };
-
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error:', event.error);
-            
-            // Handle specific error cases
-            if (event.error === 'no-speech') {
-                document.getElementById('statusText').textContent = 'No speech detected. Please try again.';
-            } else if (event.error === 'audio-capture') {
-                document.getElementById('statusText').textContent = 'Microphone not accessible. Please check permissions.';
-            } else if (event.error === 'not-allowed') {
-                document.getElementById('statusText').textContent = 'Microphone permission denied. Please allow microphone access.';
-            } else if (event.error === 'network') {
-                document.getElementById('statusText').textContent = 'Network error. Please check your connection.';
-            } else {
-                document.getElementById('statusText').textContent = `Error: ${event.error}`;
-            }
-            
-            stopListening();
-        };
-
-        recognition.onend = function() {
-            if (isListening) {
-                // Restart recognition if still in listening mode
-                setTimeout(() => {
-                    if (isListening) {
-                        recognition.start();
-                    }
-                }, 100);
-            }
-        };
-    } else {
-        console.error('Speech recognition not supported');
-        document.getElementById('statusText').textContent = 'Speech recognition not supported in this browser';
-    }
-}
-
-// Initialize text-to-speech with improved error handling
-function speak(text) {
-    if ('speechSynthesis' in window) {
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
-        
-        // Clear any existing timeout
-        if (speechTimeout) {
-            clearTimeout(speechTimeout);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MEPCO ERP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #f2d7ee, #c6e7f0, #b5e3c3);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Set voice based on selection
-        const voices = window.speechSynthesis.getVoices();
-        if (voiceType === 'female' && voices.length > 0) {
-            // Find a female voice
-            const femaleVoice = voices.find(voice => voice.name.includes('female') || voice.name.includes('Female'));
-            if (femaleVoice) utterance.voice = femaleVoice;
-        } else if (voiceType === 'male' && voices.length > 0) {
-            // Find a male voice
-            const maleVoice = voices.find(voice => voice.name.includes('male') || voice.name.includes('Male'));
-            if (maleVoice) utterance.voice = maleVoice;
+
+        .login-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 400px;
+            max-width: 90%;
         }
-        
-        // More natural speech settings
-        utterance.rate = 0.9;  // Slightly slower for more natural speech
-        utterance.pitch = 0.8; // Lower pitch for demon-like voice
-        utterance.volume = 0.9;
-        
-        // Add error handling for speech synthesis
-        utterance.onerror = function(event) {
-            console.error('Speech synthesis error:', event);
-            document.getElementById('statusText').textContent = 'Voice synthesis error. Please try again.';
-            isSpeaking = false;
-            document.getElementById('demonMouth').classList.remove('talking');
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #343a40;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a6bdf;
+            box-shadow: 0 0 0 2px rgba(74, 107, 223, 0.25);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo i {
+            font-size: 48px;
+            color: #4a6bdf;
+        }
+
+        /* Demon AI Floating Button */
+        .ai-assistant-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9d00ff, #ff00ff);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(157, 0, 255, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(157, 0, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(157, 0, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(157, 0, 255, 0); }
+        }
+
+        .ai-assistant-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(157, 0, 255, 0.6);
+        }
+
+        /* Demon AI Modal */
+        .ai-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .ai-modal-content {
+            position: relative;
+            width: 95%;
+            height: 95%;
+            max-width: 1200px;
+            margin: 2.5% auto;
+            background-color: #0a0014;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ai-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(157, 0, 255, 0.2);
+            border-bottom: 1px solid rgba(157, 0, 255, 0.3);
+        }
+
+        .ai-modal-title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .ai-close-btn, .ai-back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .ai-close-btn:hover, .ai-back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-modal-body {
+            height: calc(100% - 60px);
+        }
+
+        .ai-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="login-header">
+            <h1>MEPCO ERP</h1>
+            <p>Student Information System</p>
+        </div>
+
+        <!-- Error message display -->
+        <div id="errorContainer"></div>
+
+        <form action="/post" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+
+    <!-- Demon AI Floating Button -->
+    <button class="ai-assistant-btn" id="aiAssistantBtn" title="AI Assistant">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- Demon AI Modal -->
+    <div class="ai-modal" id="aiModal">
+        <div class="ai-modal-content">
+            <div class="ai-modal-header">
+                <div>
+                    <button class="ai-back-btn" id="aiBackBtn" style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <span class="ai-modal-title">Demon AI Assistant</span>
+                </div>
+                <button class="ai-close-btn" id="aiCloseBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ai-modal-body">
+                <iframe class="ai-iframe" id="aiIframe" src="https://demon-ai-assistant.onrender.com"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for error parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
             
-            // Reset speech synthesis
-            setTimeout(() => {
-                window.speechSynthesis.cancel();
-            }, 1000);
-            
-            // Retry speech synthesis if we haven't reached max retries
-            if (speechRetryCount < maxSpeechRetries) {
-                speechRetryCount++;
-                setTimeout(() => {
-                    console.log(`Retrying speech synthesis (${speechRetryCount}/${maxSpeechRetries})`);
-                    speak(text);
-                }, 2000);
-            } else {
-                speechRetryCount = 0; // Reset retry count
+            if (error === 'notfound') {
+                showError('Student not found. Please check your admission number.');
             }
-        };
-        
-        utterance.onstart = function() {
-            isSpeaking = true;
-            document.getElementById('demonMouth').classList.add('talking');
-            speechRetryCount = 0; // Reset retry count on successful start
-        };
-        
-        utterance.onend = function() {
-            isSpeaking = false;
-            document.getElementById('demonMouth').classList.remove('talking');
-        };
-        
-        // Add a timeout to handle cases where speech doesn't start
-        speechTimeout = setTimeout(() => {
-            if (isSpeaking) {
-                console.warn('Speech synthesis timeout');
-                window.speechSynthesis.cancel();
-                isSpeaking = false;
-                document.getElementById('demonMouth').classList.remove('talking');
-                
-                // Retry speech synthesis if we haven't reached max retries
-                if (speechRetryCount < maxSpeechRetries) {
-                    speechRetryCount++;
-                    setTimeout(() => {
-                        console.log(`Retrying speech synthesis after timeout (${speechRetryCount}/${maxSpeechRetries})`);
-                        speak(text);
-                    }, 2000);
-                } else {
-                    speechRetryCount = 0; // Reset retry count
+            
+            function showError(message) {
+                const errorContainer = document.getElementById('errorContainer');
+                errorContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> ${message}
+                    </div>
+                `;
+            }
+            
+            // Demon AI Modal Controls
+            const aiAssistantBtn = document.getElementById('aiAssistantBtn');
+            const aiModal = document.getElementById('aiModal');
+            const aiCloseBtn = document.getElementById('aiCloseBtn');
+            const aiBackBtn = document.getElementById('aiBackBtn');
+            const aiIframe = document.getElementById('aiIframe');
+            
+            // Open AI Assistant
+            aiAssistantBtn.addEventListener('click', function() {
+                aiModal.style.display = 'block';
+                aiBackBtn.style.display = 'inline-block';
+            });
+            
+            // Close AI Assistant
+            aiCloseBtn.addEventListener('click', function() {
+                aiModal.style.display = 'none';
+                // Reset iframe to start page
+                aiIframe.src = aiIframe.src;
+            });
+            
+            // Back button functionality
+            aiBackBtn.addEventListener('click', function() {
+                // Go back in iframe history
+                aiIframe.contentWindow.history.back();
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === aiModal) {
+                    aiModal.style.display = 'none';
+                    // Reset iframe to start page
+                    aiIframe.src = aiIframe.src;
                 }
-            }
-        }, 10000); // 10 second timeout
-        
-        // Add a retry mechanism for initial speech synthesis
-        try {
-            window.speechSynthesis.speak(utterance);
-        } catch (error) {
-            console.error('Error starting speech synthesis:', error);
-            document.getElementById('statusText').textContent = 'Voice synthesis error. Please try again.';
-            isSpeaking = false;
-            document.getElementById('demonMouth').classList.remove('talking');
+            });
             
-            // Try to reset and retry once
-            setTimeout(() => {
-                window.speechSynthesis.cancel();
+            // Monitor iframe navigation to show/hide back button
+            aiIframe.addEventListener('load', function() {
                 try {
-                    window.speechSynthesis.speak(utterance);
-                } catch (retryError) {
-                    console.error('Retry failed:', retryError);
+                    // Check if iframe can go back
+                    if (aiIframe.contentWindow.history.length > 1) {
+                        aiBackBtn.style.display = 'inline-block';
+                    } else {
+                        aiBackBtn.style.display = 'none';
+                    }
+                } catch (e) {
+                    // Cross-origin restrictions, just show the back button
+                    aiBackBtn.style.display = 'inline-block';
                 }
-            }, 2000);
-        }
-    } else {
-        console.error('Text-to-speech not supported');
-        document.getElementById('statusText').textContent = 'Text-to-speech not supported in this browser';
-    }
-}
-
-// Function to scroll the response text to the bottom
-function scrollToBottom() {
-    const responseText = document.getElementById('responseText');
-    responseText.scrollTop = responseText.scrollHeight;
-}
-
-// Activate demon
-function activateDemon() {
-    document.getElementById('statusText').textContent = 'Demon AI Activated';
-    const greeting = apiWorking 
-        ? `Yes, I'm here. I'm using the ${modelInUse} model. How can I help you today?` 
-        : "Yes, I'm here. I'm having some trouble with my knowledge base, but I'll do my best to help you.";
-    
-    document.getElementById('responseText').textContent = greeting;
-    scrollToBottom(); // Scroll to bottom after setting greeting
-    speak(greeting);
-    isListening = true;
-    document.getElementById('voiceButton').classList.add('active');
-    document.getElementById('wakeWordIndicator').classList.remove('active');
-    
-    // Start listening for commands
-    if (recognition) {
-        recognition.start();
-    }
-}
-
-// Process command
-function processCommand(command) {
-    document.getElementById('statusText').textContent = `Processing: "${command}"`;
-    
-    // Always try to call the Gemini API first
-    callGeminiAPI(command);
-}
-
-// Call Gemini API with improved prompt for natural conversation
-async function callGeminiAPI(prompt) {
-    try {
-        // Enhanced prompt for more natural conversation
-        const enhancedPrompt = `You are a helpful AI assistant with a friendly, conversational tone. Please respond to the following question in a natural, human-like way. Be concise but thorough, and use a conversational style. Avoid overly technical language unless necessary.
-
-User: ${prompt}
-
-Your response:`;
-        
-        document.getElementById('statusText').textContent = 'Contacting knowledge base...';
-        
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: enhancedPrompt })
+            });
         });
-        
-        const data = await response.json();
-        
-        if (data.response) {
-            // Clean up the response to make it more natural
-            let cleanedResponse = data.response.trim();
-            
-            // Remove any extra formatting that might make it sound robotic
-            cleanedResponse = cleanedResponse.replace(/^As an AI assistant,? /i, '');
-            cleanedResponse = cleanedResponse.replace(/^I'm an AI assistant,? /i, '');
-            cleanedResponse = cleanedResponse.replace(/^As a language model,? /i, '');
-            
-            document.getElementById('responseText').textContent = cleanedResponse;
-            scrollToBottom(); // Scroll to bottom after setting response
-            speak(cleanedResponse);
-            
-            // Mark API as working
-            apiWorking = true;
-            
-            // Update model in use if provided
-            if (data.model) {
-                modelInUse = data.model;
-            }
-            
-            document.getElementById('statusText').textContent = 'Response received';
-        } else {
-            // Better error handling with more specific feedback
-            let errorMessage = "I'm having trouble processing your request right now. ";
-            
-            if (data.error) {
-                console.error('API Error:', data.error);
-                
-                // Handle specific error cases
-                if (data.error.includes('API key not configured')) {
-                    errorMessage += "It seems my API key isn't set up correctly. Please check your settings and try again.";
-                } else if (data.error.includes('API key invalid') || data.error.includes('quota exceeded')) {
-                    errorMessage += "My API key appears to be invalid or I've exceeded my usage limit. Please check your API key and try again later.";
-                } else if (data.error.includes('Rate limit exceeded')) {
-                    errorMessage += "I'm getting too many requests right now. Please give me a moment and try again.";
-                } else if (data.error.includes('No models found')) {
-                    errorMessage += "I can't find any suitable AI models to use. This might be a problem with my configuration.";
-                } else {
-                    errorMessage += "There seems to be an issue with my connection to the knowledge base. " + (data.details || '');
-                }
-                
-                // Mark API as not working
-                apiWorking = false;
-            } else {
-                errorMessage += "I didn't receive a proper response from my systems. ";
-            }
-            
-            errorMessage += " I'll try to help you with my built-in knowledge instead.";
-            
-            document.getElementById('responseText').textContent = errorMessage;
-            scrollToBottom(); // Scroll to bottom after setting error message
-            speak(errorMessage);
-            
-            document.getElementById('statusText').textContent = 'Using fallback responses';
-        }
-    } catch (error) {
-        console.error('Error calling Gemini API:', error);
-        
-        // More specific error message
-        const errorMessage = "I'm experiencing some technical difficulties at the moment. My systems are having trouble connecting to the knowledge base. I'll try to help you with what I know, but you might want to try again later for a more complete answer.";
-        
-        document.getElementById('responseText').textContent = errorMessage;
-        scrollToBottom(); // Scroll to bottom after setting error message
-        speak(errorMessage);
-        
-        // Mark API as not working
-        apiWorking = false;
-        
-        document.getElementById('statusText').textContent = 'Error: ' + error.message;
-    }
-}
-
-// Test API key function
-async function testApiKey() {
-    try {
-        document.getElementById('statusText').textContent = 'Testing API key...';
-        
-        const response = await fetch('/api/check-models');
-        const data = await response.json();
-        
-        if (response.ok) {
-            document.getElementById('statusText').textContent = 'API key verified successfully';
-            apiWorking = true;
-            
-            // Update model in use if provided
-            if (data.model) {
-                modelInUse = data.model;
-            }
-        } else {
-            document.getElementById('statusText').textContent = 'API key verification failed: ' + (data.error || 'Unknown error');
-            apiWorking = false;
-        }
-    } catch (error) {
-        console.error('Error testing API key:', error);
-        document.getElementById('statusText').textContent = 'Error testing API key: ' + error.message;
-        apiWorking = false;
-    }
-}
-
-// Start listening
-function startListening() {
-    if (recognition && !isListening) {
-        isListening = true;
-        document.getElementById('voiceButton').classList.add('active');
-        document.getElementById('voiceWaveContainer').style.display = 'block';
-        document.getElementById('statusText').textContent = 'Listening...';
-        
-        recognition.start();
-    }
-}
-
-// Stop listening
-function stopListening() {
-    if (recognition && isListening) {
-        isListening = false;
-        document.getElementById('voiceButton').classList.remove('active');
-        document.getElementById('voiceWaveContainer').style.display = 'none';
-        document.getElementById('statusText').textContent = 'Not listening';
-        
-        recognition.stop();
-    }
-}
-
-// Track mouse movement for eye tracking
-document.addEventListener('mousemove', (e) => {
-    const demonContainer = document.querySelector('.demon-container');
-    const rect = demonContainer.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const angleRad = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-    const distance = Math.min(10, Math.sqrt(Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2)) / 20);
-    
-    const x = Math.cos(angleRad) * distance;
-    const y = Math.sin(angleRad) * distance;
-    
-    document.getElementById('leftPupil').style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-    document.getElementById('rightPupil').style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
-});
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    // Create particles
-    createParticles();
-    
-    // Initialize speech recognition
-    initSpeechRecognition();
-    
-    // Load voices for text-to-speech
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.onvoiceschanged = function() {
-            // Voices are loaded
-        };
-    }
-    
-    // Hide loading screen
-    setTimeout(() => {
-        document.getElementById('loadingScreen').classList.add('hide');
-        document.getElementById('statusText').textContent = 'Ready';
-        document.getElementById('wakeWordIndicator').classList.add('active');
-        
-        // Test API key on startup if provided
-        if (apiKey) {
-            testApiKey();
-        }
-        
-        // Start listening for wake word
-        if (recognition) {
-            recognition.start();
-        }
-    }, 3000);
-    
-    // Voice button
-    document.getElementById('voiceButton').addEventListener('click', () => {
-        if (isListening) {
-            stopListening();
-        } else {
-            startListening();
-        }
-    });
-    
-    // Stop button
-    document.getElementById('stopButton').addEventListener('click', () => {
-        stopListening();
-        if (isSpeaking) {
-            window.speechSynthesis.cancel();
-            document.getElementById('demonMouth').classList.remove('talking');
-        }
-    });
-    
-    // Settings button
-    document.getElementById('settingsButton').addEventListener('click', () => {
-        document.getElementById('settingsPanel').classList.toggle('open');
-    });
-    
-    // Save settings
-    document.getElementById('saveSettings').addEventListener('click', () => {
-        apiKey = document.getElementById('apiKeyInput').value;
-        voiceType = document.getElementById('voiceSelect').value;
-        wakeWord = document.getElementById('wakeWordInput').value;
-        
-        // Save to localStorage
-        localStorage.setItem('demon-ai-api-key', apiKey);
-        localStorage.setItem('demon-ai-voice-type', voiceType);
-        localStorage.setItem('demon-ai-wake-word', wakeWord);
-        
-        // Update wake word indicator
-        document.getElementById('wakeWordIndicator').textContent = `Say "${wakeWord}" to activate`;
-        
-        // Close settings panel
-        document.getElementById('settingsPanel').classList.remove('open');
-        
-        // Show confirmation
-        document.getElementById('statusText').textContent = 'Settings saved';
-        
-        // Test API key if provided
-        if (apiKey) {
-            testApiKey();
-        }
-    });
-    
-    // Load settings from localStorage
-    const savedApiKey = localStorage.getItem('demon-ai-api-key');
-    const savedVoiceType = localStorage.getItem('demon-ai-voice-type');
-    const savedWakeWord = localStorage.getItem('demon-ai-wake-word');
-    
-    if (savedApiKey) {
-        document.getElementById('apiKeyInput').value = savedApiKey;
-        apiKey = savedApiKey;
-    }
-    
-    if (savedVoiceType) {
-        document.getElementById('voiceSelect').value = savedVoiceType;
-        voiceType = savedVoiceType;
-    }
-    
-    if (savedWakeWord) {
-        document.getElementById('wakeWordInput').value = savedWakeWord;
-        wakeWord = savedWakeWord;
-        document.getElementById('wakeWordIndicator').textContent = `Say "${wakeWord}" to activate`;
-    }
-});
+    </script>
+</body>
+</html>
