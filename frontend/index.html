@@ -220,6 +220,40 @@
             height: 100%;
             border: none;
         }
+
+        .ai-permission-notice {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 0, 20, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            z-index: 10;
+        }
+
+        .ai-permission-notice h3 {
+            margin-top: 0;
+            color: #9d00ff;
+        }
+
+        .ai-permission-notice button {
+            background: #9d00ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        .ai-permission-notice button:hover {
+            background: #7a00cc;
+        }
     </style>
 </head>
 <body>
@@ -268,7 +302,12 @@
                 </button>
             </div>
             <div class="ai-modal-body">
-                <iframe class="ai-iframe" id="aiIframe" src="https://demon-ai-assistant.onrender.com"></iframe>
+                <div class="ai-permission-notice" id="aiPermissionNotice">
+                    <h3>Microphone Permission Required</h3>
+                    <p>Demon AI needs microphone access to work properly. Please click the button below to open it in a new tab where it can access your microphone.</p>
+                    <button id="openInNewTab">Open in New Tab</button>
+                </div>
+                <iframe class="ai-iframe" id="aiIframe" style="display: none;"></iframe>
             </div>
         </div>
     </div>
@@ -298,47 +337,42 @@
             const aiCloseBtn = document.getElementById('aiCloseBtn');
             const aiBackBtn = document.getElementById('aiBackBtn');
             const aiIframe = document.getElementById('aiIframe');
+            const aiPermissionNotice = document.getElementById('aiPermissionNotice');
+            const openInNewTabBtn = document.getElementById('openInNewTab');
             
             // Open AI Assistant
             aiAssistantBtn.addEventListener('click', function() {
                 aiModal.style.display = 'block';
-                aiBackBtn.style.display = 'inline-block';
+                // Show permission notice instead of iframe
+                aiPermissionNotice.style.display = 'block';
+                aiIframe.style.display = 'none';
+            });
+            
+            // Open in new tab
+            openInNewTabBtn.addEventListener('click', function() {
+                window.open('https://demon-ai-assistant.onrender.com', '_blank');
+                aiModal.style.display = 'none';
             });
             
             // Close AI Assistant
             aiCloseBtn.addEventListener('click', function() {
                 aiModal.style.display = 'none';
-                // Reset iframe to start page
-                aiIframe.src = aiIframe.src;
             });
             
             // Back button functionality
             aiBackBtn.addEventListener('click', function() {
                 // Go back in iframe history
-                aiIframe.contentWindow.history.back();
+                try {
+                    aiIframe.contentWindow.history.back();
+                } catch (e) {
+                    console.error('Cannot access iframe history due to cross-origin restrictions');
+                }
             });
             
             // Close modal when clicking outside
             window.addEventListener('click', function(event) {
                 if (event.target === aiModal) {
                     aiModal.style.display = 'none';
-                    // Reset iframe to start page
-                    aiIframe.src = aiIframe.src;
-                }
-            });
-            
-            // Monitor iframe navigation to show/hide back button
-            aiIframe.addEventListener('load', function() {
-                try {
-                    // Check if iframe can go back
-                    if (aiIframe.contentWindow.history.length > 1) {
-                        aiBackBtn.style.display = 'inline-block';
-                    } else {
-                        aiBackBtn.style.display = 'none';
-                    }
-                } catch (e) {
-                    // Cross-origin restrictions, just show the back button
-                    aiBackBtn.style.display = 'inline-block';
                 }
             });
         });
