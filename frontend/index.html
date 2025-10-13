@@ -196,7 +196,7 @@
             font-weight: 600;
         }
 
-        .ai-close-btn, .ai-back-btn {
+        .ai-close-btn {
             background: none;
             border: none;
             color: #ffffff;
@@ -207,18 +207,146 @@
             transition: background 0.3s;
         }
 
-        .ai-close-btn:hover, .ai-back-btn:hover {
+        .ai-close-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
         .ai-modal-body {
             height: calc(100% - 60px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
         }
 
-        .ai-iframe {
-            width: 100%;
-            height: 100%;
+        .ai-permission-notice {
+            background: rgba(157, 0, 255, 0.2);
+            border: 1px solid rgba(157, 0, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 500px;
+        }
+
+        .ai-permission-notice h3 {
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .ai-permission-notice p {
+            color: #b8b8ff;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .ai-open-btn {
+            background: linear-gradient(135deg, #9d00ff, #ff00ff);
+            color: white;
             border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .ai-open-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(157, 0, 255, 0.4);
+        }
+
+        .ai-alternative-options {
+            margin-top: 20px;
+        }
+
+        .ai-alternative-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .ai-alternative-option h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #9d00ff;
+        }
+
+        .ai-alternative-option p {
+            margin: 0;
+            font-size: 14px;
+            color: #b8b8ff;
+        }
+
+        .ai-text-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(157, 0, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            margin-bottom: 10px;
+            resize: none;
+        }
+
+        .ai-send-btn {
+            background: linear-gradient(135deg, #9d00ff, #ff00ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(157, 0, 255, 0.4);
+        }
+
+        .ai-response {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(157, 0, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #ffffff;
+            font-size: 14px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Custom scrollbar for AI response */
+        .ai-response::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ai-response::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .ai-response::-webkit-scrollbar-thumb {
+            background: #9d00ff;
+            border-radius: 4px;
+        }
+
+        .ai-response::-webkit-scrollbar-thumb:hover {
+            background: #ff00ff;
         }
     </style>
 </head>
@@ -257,18 +385,34 @@
     <div class="ai-modal" id="aiModal">
         <div class="ai-modal-content">
             <div class="ai-modal-header">
-                <div>
-                    <button class="ai-back-btn" id="aiBackBtn" style="display: none;">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <span class="ai-modal-title">Demon AI Assistant</span>
-                </div>
+                <span class="ai-modal-title">Demon AI Assistant</span>
                 <button class="ai-close-btn" id="aiCloseBtn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="ai-modal-body">
-                <iframe class="ai-iframe" id="aiIframe" src="https://demon-ai-assistant.onrender.com"></iframe>
+                <div class="ai-permission-notice">
+                    <h3>Demon AI Assistant</h3>
+                    <p>Due to browser security restrictions, the voice assistant needs to open in a new tab to access your microphone. Click the button below to open it.</p>
+                    <a href="https://demon-ai-assistant.onrender.com" target="_blank" class="ai-open-btn">
+                        <i class="fas fa-external-link-alt"></i> Open in New Tab
+                    </a>
+                    
+                    <div class="ai-alternative-options">
+                        <div class="ai-alternative-option">
+                            <h4>Text-Only Mode</h4>
+                            <p>Ask questions using text input instead of voice</p>
+                            <textarea class="ai-text-input" id="aiTextInput" placeholder="Type your question here..."></textarea>
+                            <button class="ai-send-btn" id="aiSendBtn">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        
+                        <div class="ai-response" id="aiResponse">
+                            <p>Demon AI responses will appear here...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -296,49 +440,72 @@
             const aiAssistantBtn = document.getElementById('aiAssistantBtn');
             const aiModal = document.getElementById('aiModal');
             const aiCloseBtn = document.getElementById('aiCloseBtn');
-            const aiBackBtn = document.getElementById('aiBackBtn');
-            const aiIframe = document.getElementById('aiIframe');
+            const aiTextInput = document.getElementById('aiTextInput');
+            const aiSendBtn = document.getElementById('aiSendBtn');
+            const aiResponse = document.getElementById('aiResponse');
             
             // Open AI Assistant
             aiAssistantBtn.addEventListener('click', function() {
                 aiModal.style.display = 'block';
-                aiBackBtn.style.display = 'inline-block';
             });
             
             // Close AI Assistant
             aiCloseBtn.addEventListener('click', function() {
                 aiModal.style.display = 'none';
-                // Reset iframe to start page
-                aiIframe.src = aiIframe.src;
-            });
-            
-            // Back button functionality
-            aiBackBtn.addEventListener('click', function() {
-                // Go back in iframe history
-                aiIframe.contentWindow.history.back();
             });
             
             // Close modal when clicking outside
             window.addEventListener('click', function(event) {
                 if (event.target === aiModal) {
                     aiModal.style.display = 'none';
-                    // Reset iframe to start page
-                    aiIframe.src = aiIframe.src;
                 }
             });
             
-            // Monitor iframe navigation to show/hide back button
-            aiIframe.addEventListener('load', function() {
-                try {
-                    // Check if iframe can go back
-                    if (aiIframe.contentWindow.history.length > 1) {
-                        aiBackBtn.style.display = 'inline-block';
-                    } else {
-                        aiBackBtn.style.display = 'none';
-                    }
-                } catch (e) {
-                    // Cross-origin restrictions, just show the back button
-                    aiBackBtn.style.display = 'inline-block';
+            // Send text message
+            aiSendBtn.addEventListener('click', function() {
+                const message = aiTextInput.value.trim();
+                if (message) {
+                    // Show loading state
+                    aiResponse.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Processing your question...</p>';
+                    
+                    // Call the API
+                    fetch('/api/gemini', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            prompt: `You are a helpful AI assistant with a friendly, conversational tone. Please respond to the following question in a natural, human-like way. Be concise but thorough, and use a conversational style. Avoid overly technical language unless necessary.\n\nUser: ${message}\n\nYour response:` 
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.response) {
+                            // Clean up the response
+                            let cleanedResponse = data.response.trim();
+                            cleanedResponse = cleanedResponse.replace(/^As an AI assistant,? /i, '');
+                            cleanedResponse = cleanedResponse.replace(/^I'm an AI assistant,? /i, '');
+                            cleanedResponse = cleanedResponse.replace(/^As a language model,? /i, '');
+                            
+                            aiResponse.innerHTML = `<p>${cleanedResponse}</p>`;
+                        } else {
+                            aiResponse.innerHTML = `<p>I'm having trouble processing your request right now. Please try again later.</p>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        aiResponse.innerHTML = `<p>I'm experiencing some technical difficulties. Please try again later.</p>`;
+                    });
+                    
+                    // Clear input
+                    aiTextInput.value = '';
+                }
+            });
+            
+            // Allow Enter key to send message
+            aiTextInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    aiSendBtn.click();
                 }
             });
         });
